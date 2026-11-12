@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use ahash::AHashMap;
-use config::Config;
+use config::{Config, SmartPunctuation};
 use pulldown_cmark::Options;
 use tera::Tera;
 use utils::types::InsertAnchor;
@@ -16,9 +16,16 @@ pub struct MarkdownContext<'a> {
     pub current_permalink: &'a str,
     pub current_path: &'a str,
     pub insert_anchor: InsertAnchor,
+    /// Smart punctuation mode for this document, front matter override included.
+    pub smart_punctuation: SmartPunctuation,
 }
 
 impl<'a> MarkdownContext<'a> {
+    /// Smart punctuation mode, with `"auto"` resolved against the document language.
+    pub fn smart_punctuation(&self) -> SmartPunctuation {
+        self.smart_punctuation.resolve(self.lang)
+    }
+
     pub fn options(&self) -> Options {
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_TABLES);
@@ -29,7 +36,7 @@ impl<'a> MarkdownContext<'a> {
         // TODO: enable it later
         // opts.insert(Options::ENABLE_WIKILINKS);
 
-        if self.config.markdown.smart_punctuation {
+        if self.smart_punctuation().is_enabled() {
             opts.insert(Options::ENABLE_SMART_PUNCTUATION);
         }
         if self.config.markdown.definition_list {

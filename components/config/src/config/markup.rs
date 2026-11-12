@@ -135,6 +135,72 @@ impl Highlighting {
     }
 }
 
+/// Typographic conventions applied by smart punctuation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TypographyLocale {
+    /// Use the language of the document.
+    #[serde(rename = "auto")]
+    Auto,
+    /// English conventions.
+    #[serde(rename = "en")]
+    English,
+    /// French conventions: guillemets, non-breaking spaces before punctuation
+    /// and em dashes for incises.
+    #[serde(rename = "fr")]
+    French,
+}
+
+impl TypographyLocale {
+    /// Locale for a language code (`fr`, `fr-FR`, …); defaults to English.
+    pub fn for_language(lang: &str) -> Self {
+        let primary = lang.split(['-', '_']).next().unwrap_or(lang);
+        if primary.eq_ignore_ascii_case("fr") { Self::French } else { Self::English }
+    }
+}
+
+/// Smart punctuation configuration: `true`/`false`, or a locale (`"auto"`,
+/// `"en"`, `"fr"`). `"auto"` follows the document language.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SmartPunctuation {
+    Enabled(bool),
+    Locale(TypographyLocale),
+}
+
+impl Default for SmartPunctuation {
+    fn default() -> Self {
+        Self::Enabled(false)
+    }
+}
+
+impl From<bool> for SmartPunctuation {
+    fn from(enabled: bool) -> Self {
+        Self::Enabled(enabled)
+    }
+}
+
+impl SmartPunctuation {
+    /// Whether any smart punctuation should be applied.
+    pub fn is_enabled(self) -> bool {
+        !matches!(self, Self::Enabled(false))
+    }
+
+    /// Whether the French rules apply; resolve `"auto"` first.
+    pub fn is_french(self) -> bool {
+        matches!(self, Self::Locale(TypographyLocale::French))
+    }
+
+    /// Resolve `"auto"` against the language of the document.
+    pub fn resolve(self, lang: &str) -> Self {
+        match self {
+            Self::Locale(TypographyLocale::Auto) => {
+                Self::Locale(TypographyLocale::for_language(lang))
+            }
+            other => other,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Markdown {
@@ -153,8 +219,8 @@ pub struct Markdown {
     pub external_links_no_referrer: bool,
     /// Whether to set rel="external" for all external links
     pub external_links_external: bool,
-    /// Whether smart punctuation is enabled (changing quotes, dashes, dots etc in their typographic form)
-    pub smart_punctuation: bool,
+    /// Whether smart punctuation is enabled. Can be a locale (`"auto"`, `"en"`, `"fr"`).
+    pub smart_punctuation: SmartPunctuation,
     /// Whether parsing of definition lists is enabled
     pub definition_list: bool,
     /// Whether footnotes are rendered at the bottom in the style of GitHub.
@@ -231,7 +297,7 @@ impl Default for Markdown {
             external_links_no_follow: false,
             external_links_no_referrer: false,
             external_links_external: true,
-            smart_punctuation: false,
+            smart_punctuation: SmartPunctuation::Enabled(false),
             definition_list: false,
             bottom_footnotes: false,
             lazy_async_image: false,

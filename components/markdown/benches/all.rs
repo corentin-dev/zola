@@ -86,6 +86,7 @@ fn bench_without_highlighting(c: &mut Criterion) {
         current_permalink: "https://www.example.com/bench/",
         current_path: "bench.md",
         insert_anchor: InsertAnchor::None,
+        smart_punctuation: config.markdown.smart_punctuation,
     };
 
     c.bench_function("render_without_highlighting", |b| {
@@ -124,6 +125,7 @@ fn bench_with_highlighting(c: &mut Criterion) {
         current_permalink: "https://www.example.com/bench/",
         current_path: "bench.md",
         insert_anchor: InsertAnchor::None,
+        smart_punctuation: config.markdown.smart_punctuation,
     };
 
     c.bench_function("render_with_highlighting", |b| {

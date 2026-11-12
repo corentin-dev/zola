@@ -10,7 +10,8 @@
 - Change Sass library to support more recent Sass things
 - Apply `ignored_content` only to content changes in `zola serve`
 - Fix line breaks in image alt text being dropped and replace them with spaces instead
-
+- Add French typographic conventions to `smart_punctuation`, with `"auto"` following the document language
+- Allow pages and sections to override `smart_punctuation` in their front matter
 
 ## 0.23.6 (2026-09-12)
 

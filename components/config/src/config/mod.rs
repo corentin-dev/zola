@@ -494,8 +494,47 @@ impl Default for Config {
 
 #[cfg(test)]
 mod tests {
+    use super::markup::SmartPunctuation;
     use super::*;
     use utils::slugs::SlugifyStrategy;
+
+    #[test]
+    fn can_parse_smart_punctuation_locale() {
+        let config = Config::parse(
+            "base_url = \"https://example.com\"\n[markdown]\nsmart_punctuation = \"fr\"\n",
+        )
+        .unwrap();
+        assert!(config.markdown.smart_punctuation.is_french());
+        assert!(config.markdown.smart_punctuation.is_enabled());
+
+        let config = Config::parse(
+            "base_url = \"https://example.com\"\n[markdown]\nsmart_punctuation = true\n",
+        )
+        .unwrap();
+        assert!(config.markdown.smart_punctuation.is_enabled());
+        assert!(!config.markdown.smart_punctuation.is_french());
+
+        let config = Config::parse(
+            "base_url = \"https://example.com\"\n[markdown]\nsmart_punctuation = \"en\"\n",
+        )
+        .unwrap();
+        assert!(config.markdown.smart_punctuation.is_enabled());
+        assert!(!config.markdown.smart_punctuation.is_french());
+
+        let config = Config::parse(
+            "base_url = \"https://example.com\"\n[markdown]\nsmart_punctuation = \"auto\"\n",
+        )
+        .unwrap();
+        assert!(config.markdown.smart_punctuation.is_enabled());
+        assert!(config.markdown.smart_punctuation.resolve("fr").is_french());
+        assert!(config.markdown.smart_punctuation.resolve("fr-FR").is_french());
+        assert!(!config.markdown.smart_punctuation.resolve("en").is_french());
+        assert!(!config.markdown.smart_punctuation.resolve("it").is_french());
+        assert_eq!(SmartPunctuation::Enabled(true).resolve("fr"), SmartPunctuation::Enabled(true));
+
+        let config = Config::parse("base_url = \"https://example.com\"\n").unwrap();
+        assert!(!config.markdown.smart_punctuation.is_enabled());
+    }
 
     #[test]
     fn can_add_default_language_with_data_only_at_base_section() {

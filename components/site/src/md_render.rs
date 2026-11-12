@@ -97,6 +97,7 @@ pub fn render_page(
         current_permalink: &page.permalink,
         current_path: &page.file.relative,
         insert_anchor,
+        smart_punctuation: page.meta.smart_punctuation.unwrap_or(config.markdown.smart_punctuation),
     };
     let res = markdown::render_content(&input, &context)
         .with_context(|| format!("Failed to render content of {}", page.file.path.display()))?;
@@ -150,6 +151,10 @@ pub fn render_section(
             .meta
             .insert_anchor_links
             .unwrap_or(config.markdown.insert_anchor_links),
+        smart_punctuation: section
+            .meta
+            .smart_punctuation
+            .unwrap_or(config.markdown.smart_punctuation),
     };
     let res = markdown::render_content(&input, &context)
         .with_context(|| format!("Failed to render content of {}", section.file.path.display()))?;

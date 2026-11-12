@@ -89,6 +89,11 @@ paginate_reversed = false
 # "heading" means the full heading becomes the text of the anchor.
 insert_anchor_links = "none"
 
+# Typographic conventions for this section, overriding `[markdown].smart_punctuation`
+# from the configuration. Can be `true`, `false`, or a locale: "auto", "en", "fr".
+# "auto" uses the language of the section (`fr` for `_index.fr.md`).
+# smart_punctuation =
+
 # If set to "true", the section pages will be in the search index. This is only used if
 # `build_search_index` is set to "true" in the Zola configuration file.
 in_search_index = true

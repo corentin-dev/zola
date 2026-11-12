@@ -1,0 +1,9 @@
+---
+source: components/markdown/tests/markdown.rs
+expression: body
+---
+<h1 id="titre-les-guillemets">Titre : les « guillemets »</h1>
+<p>Il a dit « Ce n’est pas fini ». Puis il ajouta : « On verra — demain ».</p>
+<p>Une incise — ici. Une plage 2–3.</p>
+<p>Vraiment ? Oui ! Attention ; voici. 😄</p>
+<p>Du <code>code: brut!</code> reste intact.</p>

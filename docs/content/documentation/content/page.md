@@ -117,6 +117,11 @@ draft = false
 # When set to "false" Zola will not create a separate folder with index.html inside for this page.
 render = false
 
+# Typographic conventions for this page, overriding `[markdown].smart_punctuation`
+# from the configuration. Can be `true`, `false`, or a locale: "auto", "en", "fr".
+# "auto" uses the language of the page (`fr` for `page.fr.md`).
+# smart_punctuation =
+
 # If set, this slug will be used instead of the filename to make the URL.
 # The section path will still be used.
 slug = ""

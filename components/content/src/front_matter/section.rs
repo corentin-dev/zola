@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use tera::{Map, Value};
 
 use super::extra::{default_extra, deserialize_extra};
+use config::SmartPunctuation;
 use errors::Result;
 use utils::types::InsertAnchor;
 
@@ -42,6 +43,8 @@ pub struct SectionFrontMatter {
     /// Whether to insert a link for each header like the ones you can see in this site if you hover one
     /// The default template can be overridden by creating a `anchor-link.html` in the `templates` directory
     pub insert_anchor_links: Option<InsertAnchor>,
+    /// Typographic conventions for this section, overriding `[markdown].smart_punctuation`.
+    pub smart_punctuation: Option<SmartPunctuation>,
     /// Whether to render that section or not. Defaults to `true`.
     /// Useful when the section is only there to organize things but is not meant
     /// to be used directly, like a posts section in a personal site
@@ -104,6 +107,7 @@ impl Default for SectionFrontMatter {
             render: true,
             redirect_to: None,
             insert_anchor_links: None,
+            smart_punctuation: None,
             in_search_index: true,
             transparent: false,
             page_template: None,

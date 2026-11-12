@@ -16,6 +16,7 @@ use utils::table_of_contents::{Heading, make_table_of_contents};
 use utils::types::InsertAnchor;
 
 use crate::MarkdownContext;
+use crate::typography::Typography;
 
 const CONTINUE_READING: &str = "<span id=\"continue-reading\"></span>";
 static EMOJI_REPLACER: LazyLock<EmojiReplacer> = LazyLock::new(EmojiReplacer::new);
@@ -261,6 +262,27 @@ struct FootnoteDef {
     content: Vec<Event<'static>>,
 }
 
+/// Block boundaries reset the typography state so unmatched quotes do not leak.
+fn is_block_boundary(event: &Event<'_>) -> bool {
+    matches!(
+        event,
+        Event::Start(Tag::Paragraph)
+            | Event::Start(Tag::Heading { .. })
+            | Event::Start(Tag::Item)
+            | Event::Start(Tag::FootnoteDefinition(_))
+            | Event::Start(Tag::TableCell)
+            | Event::Start(Tag::DefinitionListTitle)
+            | Event::Start(Tag::DefinitionListDefinition)
+            | Event::End(TagEnd::Paragraph)
+            | Event::End(TagEnd::Heading(_))
+            | Event::End(TagEnd::Item)
+            | Event::End(TagEnd::FootnoteDefinition)
+            | Event::End(TagEnd::TableCell)
+            | Event::End(TagEnd::DefinitionListTitle)
+            | Event::End(TagEnd::DefinitionListDefinition)
+    )
+}
+
 #[derive(Debug, Default)]
 pub struct State<'a> {
     output: Vec<Event<'a>>,
@@ -284,6 +306,8 @@ pub struct State<'a> {
     external_links: Vec<String>,
     /// Errors collected during rendering. Combined into one error at the end.
     errors: Vec<Error>,
+    /// French typographic conventions, applied when configured.
+    typography: Typography,
 }
 
 impl<'a> State<'a> {
@@ -315,6 +339,7 @@ impl<'a> State<'a> {
     }
 
     pub fn render(mut self, content: &'a str, ctx: &MarkdownContext) -> Result<Rendered> {
+        self.typography = Typography::new(ctx.smart_punctuation().is_french());
         let events: Vec<_> = Parser::new_ext(content, ctx.options()).collect();
 
         // Pre-scan for explicit heading IDs to reserve them
@@ -328,23 +353,31 @@ impl<'a> State<'a> {
         for event in events {
             self.process(event, ctx);
         }
+        if let Some(pending) = self.typography.take_pending() {
+            self.push(pending);
+        }
         self.finish(ctx)
     }
 
     fn end_heading(&mut self, ctx: &MarkdownContext) {
         let h = self.heading.take().unwrap();
         let title = h.text();
+        // Keep typographic spaces out of heading anchors.
+        let slug_title = title.replace(['\u{00A0}', '\u{202F}'], " ");
 
         // Generate or use explicit ID
-        let id = if let Some(ref explicit) = h.explicit_id {
+        let id = if let Some(explicit) = &h.explicit_id {
             // insert() returns false if already present = duplicate explicit ID
             if !self.seen_explicit_ids.insert(explicit.clone()) {
                 log::warn!("Heading ID '{}' collision in {}", explicit, ctx.current_path);
             }
             explicit.to_owned()
         } else {
-            let id =
-                find_anchor(&self.anchors, slugify_anchors(&title, ctx.config.slugify.anchors), 0);
+            let id = find_anchor(
+                &self.anchors,
+                slugify_anchors(&slug_title, ctx.config.slugify.anchors),
+                0,
+            );
             self.anchors.insert(id.clone());
             id
         };
@@ -522,6 +555,13 @@ impl<'a> State<'a> {
 
     #[inline]
     fn process(&mut self, event: Event<'a>, ctx: &MarkdownContext) {
+        let french = self.typography.is_french();
+        if french && !matches!(&event, Event::Text(_)) {
+            if let Some(pending) = self.typography.take_pending() {
+                self.push(pending);
+            }
+        }
+        let block_boundary = french && is_block_boundary(&event);
         match event {
             // Code blocks
             Event::Start(Tag::CodeBlock(kind)) => {
@@ -584,6 +624,11 @@ impl<'a> State<'a> {
                 } else {
                     text
                 };
+                let text = if french && self.code_block.is_none() {
+                    self.typography.text(&text).into()
+                } else {
+                    text
+                };
                 self.push(Event::Text(text));
             }
 
@@ -599,6 +644,9 @@ impl<'a> State<'a> {
 
             // Everything else
             _ => self.push(event),
+        }
+        if block_boundary {
+            self.typography.reset();
         }
     }
 
@@ -744,6 +792,7 @@ mod tests {
             current_permalink: "",
             current_path: "",
             insert_anchor: InsertAnchor::None,
+            smart_punctuation: config.markdown.smart_punctuation,
         }
     }
 

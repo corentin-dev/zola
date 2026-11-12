@@ -121,6 +121,7 @@ fn can_customise_anchor_template() {
         current_permalink: "",
         current_path: "",
         insert_anchor: InsertAnchor::Right,
+        smart_punctuation: config.markdown.smart_punctuation,
     };
     let body = render_content("# Hello", &context).unwrap().body;
     insta::assert_snapshot!(body);
@@ -142,6 +143,7 @@ fn can_customise_summary_template() {
         current_permalink: "",
         current_path: "",
         insert_anchor: InsertAnchor::Right,
+        smart_punctuation: config.markdown.smart_punctuation,
     };
     let summary = render_content("Hello <!-- more --> World!", &context).unwrap().summary.unwrap();
     insta::assert_snapshot!(summary);
@@ -150,9 +152,56 @@ fn can_customise_summary_template() {
 #[test]
 fn can_use_smart_punctuation() {
     let mut config = Config::default_for_test();
-    config.markdown.smart_punctuation = true;
+    config.markdown.smart_punctuation = true.into();
     let body = common::render_with_config(r#"This -- is "it"..."#, config).unwrap().body;
     insta::assert_snapshot!(body);
+}
+
+#[test]
+fn can_use_french_smart_punctuation() {
+    let mut config = Config::default_for_test();
+    config.markdown.smart_punctuation =
+        config::SmartPunctuation::Locale(config::TypographyLocale::French);
+    config.markdown.render_emoji = true;
+    let content = r#"# Titre : les "guillemets"
+
+Il a dit "Ce n'est pas fini". Puis il ajouta : "On verra -- demain".
+
+Une incise --- ici. Une plage 2--3.
+
+Vraiment ? Oui ! Attention ; voici. :smile:
+
+Du `code: brut!` reste intact.
+"#;
+    let body = common::render_with_config(content, config).unwrap().body;
+    insta::assert_snapshot!(body);
+}
+
+#[test]
+fn typography_locale_can_follow_the_document_language() {
+    let mut config = Config::default_for_test();
+    config.markdown.smart_punctuation =
+        config::SmartPunctuation::Locale(config::TypographyLocale::Auto);
+
+    let english = common::render_with_config(r#"Il a dit "Bonjour !"."#, config).unwrap();
+    assert!(!english.body.contains('«'), "{}", english.body);
+
+    let mut config = Config::default_for_test();
+    config.markdown.smart_punctuation =
+        config::SmartPunctuation::Locale(config::TypographyLocale::Auto);
+    config.default_language = "fr".to_string();
+    let french = common::render_with_config(r#"Il a dit "Bonjour !"."#, config).unwrap();
+    assert!(french.body.contains("«\u{00A0}Bonjour\u{00A0}!\u{00A0}»"), "{}", french.body);
+}
+
+#[test]
+fn french_typography_does_not_leak_into_heading_anchors() {
+    let mut config = Config::default_for_test();
+    config.markdown.smart_punctuation =
+        config::SmartPunctuation::Locale(config::TypographyLocale::French);
+    config.slugify.anchors = SlugifyStrategy::Safe;
+    let body = common::render_with_config("# Titre : suite", config).unwrap().body;
+    assert!(body.contains(r#"id="Titre_:_suite""#), "{body}");
 }
 
 #[test]

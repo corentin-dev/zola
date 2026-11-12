@@ -145,6 +145,12 @@ external_links_external = true
 
 # Whether smart punctuation is enabled (changing quotes, dashes, dots in their typographic form)
 # For example, `...` into `…`, `"quote"` into `“curly”` etc
+# It can also be a locale, which applies that locale's conventions:
+# `"fr"` uses guillemets with non-breaking spaces, `; : ! ?` preceded by a
+# non-breaking space, en dashes for ranges and em dashes for incises.
+# `"auto"` uses the language of each page or section (`fr` for `page.fr.md`).
+# Languages without specific typographic rules use the English conventions.
+# This value can be overridden per page/section in the front matter.
 smart_punctuation = false
 
 # Whether parsing of definition lists is enabled

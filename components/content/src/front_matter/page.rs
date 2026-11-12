@@ -7,6 +7,7 @@ use time::macros::{format_description, time};
 use time::{Date, OffsetDateTime, PrimitiveDateTime};
 
 use super::datetime::from_unknown_datetime;
+use config::SmartPunctuation;
 use errors::{Result, bail};
 
 use super::extra::{default_extra, deserialize_extra};
@@ -64,6 +65,8 @@ pub struct PageFrontMatter {
     /// Specify a template different from `page.html` to use for that page
     #[serde(skip_serializing)]
     pub template: Option<String>,
+    /// Typographic conventions for this page, overriding `[markdown].smart_punctuation`.
+    pub smart_punctuation: Option<SmartPunctuation>,
     /// Whether the page is included in the search index
     /// Defaults to `true` but is only used if search if explicitly enabled in the config.
     #[serde(skip_serializing)]
@@ -170,6 +173,7 @@ impl Default for PageFrontMatter {
             authors: Vec::new(),
             aliases: Vec::new(),
             template: None,
+            smart_punctuation: None,
             hidden: None,
             extra: Value::from(Map::new()),
         }

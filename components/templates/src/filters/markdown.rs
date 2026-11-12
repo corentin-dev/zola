@@ -71,6 +71,7 @@ impl Filter<&str, TeraResult<String>> for MarkdownFilter {
             current_permalink: &current_permalink,
             current_path: &current_path,
             insert_anchor: InsertAnchor::None,
+            smart_punctuation: self.config.markdown.smart_punctuation,
         };
 
         let mut html = render_content(value, &context)
@@ -187,7 +188,7 @@ mod tests {
             registry: Arc::new(get_test_registry()),
             add_color_scheme: None,
         });
-        config.markdown.smart_punctuation = true;
+        config.markdown.smart_punctuation = true.into();
         config.markdown.render_emoji = true;
         config.markdown.external_links_target_blank = true;
 

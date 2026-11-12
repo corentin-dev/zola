@@ -1,5 +1,6 @@
 mod context;
 mod markdown;
+mod typography;
 
 use errors::Result;
 

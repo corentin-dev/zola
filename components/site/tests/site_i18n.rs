@@ -182,6 +182,30 @@ fn can_build_multilingual_site() {
     assert!(!file_exists!(public, "search_index.fr.js"));
 }
 
+#[test]
+fn typography_locale_follows_content_language() {
+    let (_, _tmp_dir, public) = build_site_with_setup("test_site_i18n", |mut site| {
+        site.config.markdown.smart_punctuation =
+            config::SmartPunctuation::Locale(config::TypographyLocale::Auto);
+        (site, true)
+    });
+
+    // French translation without override: French conventions.
+    assert!(file_contains!(
+        public,
+        "fr/blog/something/index.html",
+        "«\u{00A0}Bonjour\u{00A0}!\u{00A0}»"
+    ));
+    // English page without override: English conventions.
+    assert!(file_contains!(public, "blog/not-translated/index.html", "“Hello!”"));
+    // Page-level front matter override wins over the content language.
+    assert!(file_contains!(
+        public,
+        "blog/something/index.html",
+        "«\u{00A0}Hello\u{00A0}!\u{00A0}»"
+    ));
+}
+
 // https://github.com/getzola/zola/issues/2689
 #[test]
 fn can_build_search_index_for_non_default_language_only() {
